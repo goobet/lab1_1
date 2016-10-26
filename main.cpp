@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 #define PARAMS_FROM_KEYBOARD
@@ -10,7 +11,7 @@ double* u_old;
 
 double* u2;
 double* u2_old;
-double* gamma;
+double* kappa;
 double* omega;
 
 double L;
@@ -28,7 +29,7 @@ void init_parameters()
 #ifdef PARAMS_FROM_KEYBOARD
   L = 1;
   h = 0.1;
-  J = 10;
+  J = 2;
   cout << "L: " << L << endl;
   cout << "h: " << h << endl;
   cout << "J: " << J << endl;
@@ -88,7 +89,7 @@ double betta1(double t)
 
 bool check_conditions()
 {
-  return (psi1(0) == psi2(0)) && (psi1(L) == psi2(0));
+  return (psi1(0) == psi2(0)) && (psi1(L) == psi3(0));
 }
 
 void init_containers()
@@ -98,7 +99,7 @@ void init_containers()
   u2 = new double[N+1];
   u2_old = new double[N+1];
   omega = new double[N+1];
-  gamma = new double[N+1];
+  kappa = new double[N+1];
 }
 
 void fill_first_layer()
@@ -152,6 +153,16 @@ void calculate_explicit()
   }
 }
 
+bool check_resolution(double a, double c, double b)
+{
+  if (abs(c) >= abs(a) + abs(b)) {
+    return true;
+  } else {
+    printf("WARNING: |%lf| < |%lf| + |%lf|\n", c, a, b);
+    return false;
+  }
+}
+
 void calculate_implicit()
 {
   swap(&u2, &u2_old);
@@ -161,8 +172,10 @@ void calculate_implicit()
   double B = -ath;
   double F = tau*phi(h, t+tau) + u2_old[1]; // phi on j+1
 
-  gamma[1] = -B/C;
-  omega[1] = -F/C;
+  kappa[1] = -B/C;
+  omega[1] = F/C;
+  printf("0 %lf %lf %lf\n", C, B, F);
+  check_resolution(0, C, B);
 
   for(int i = 1; i < N; i++) {
     ath = (tau/(h*h))*a(i*h, t)*a(i*h, t)*(1+u2_old[i]*u2_old[i]);
@@ -172,9 +185,10 @@ void calculate_implicit()
     F = tau*phi(i*h, t+tau) + u2_old[i]; // phi on j+1
 
     printf("%lf %lf %lf %lf\n", A, C, B, F);
+    check_resolution(A, C, B);
 
-    gamma[i+1] = -B/(A*gamma[i] + C);
-    omega[i+1] = (F - A*omega[i])/(A*gamma[i] + C);
+    kappa[i+1] = -B/(A*kappa[i] + C);
+    omega[i+1] = (F - A*omega[i])/(A*kappa[i] + C);
   }
 
   ath = (tau/(h*h))*a(N*h, t)*a(N*h, t)*(1+u2_old[N]*u2_old[N]);
@@ -182,11 +196,12 @@ void calculate_implicit()
   C = 1-2*ath;
   F = tau*phi(N*h, t+tau) + u2_old[N]; // phi on j+1
   printf("%lf %lf %lf %lf\n", A, C, B, F);
+  check_resolution(A, C, B);
 
-  u2[N] = (F - A*omega[N])/(C + A*gamma[N]);
+  u2[N] = (F - A*omega[N])/(C + A*kappa[N]);
   printf("%lf\n", u2[N]);
   for(int i = N-1; i >= 0; i--) {
-  	u2[i] = gamma[i+1]*u2[i+1] + omega[i+1];
+  	u2[i] = kappa[i+1]*u2[i+1] + omega[i+1];
   }
 }
 

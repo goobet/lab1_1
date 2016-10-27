@@ -4,7 +4,7 @@
 using namespace std;
 
 #define PARAMS_FROM_KEYBOARD
-bool DEBUG = true;
+bool DEBUG = false;
 
 double* u;
 double* u_old;
@@ -180,7 +180,7 @@ void calculate_implicit()
   for(int i = 1; i < N; i++) {
     ath = (tau/(h*h))*a(i*h, t)*a(i*h, t)*(1+u2_old[i]*u2_old[i]);
     A = -ath;
-    C = 1-2*ath;
+    C = 1+2*ath;
     B = -ath;
     F = tau*phi(i*h, t+tau) + u2_old[i]; // phi on j+1
 
@@ -230,7 +230,7 @@ void print_results()
 {
   cout << "x explicit" << endl;
   for(int i = 0; i <= N; i++) {
-    printf("%0.2lf %0.2lf\n", i*h, u[i]);
+    printf("%0.2lf %0.2lf %0.2lf %0.2lf\n", i*h, u[i], u2[i], abs(u2[i]-u[i]));
   }
 }
 
@@ -259,7 +259,7 @@ int main()
   init_containers();
   fill_first_layer();
   calculate();
-  // print_results();
+  print_results();
 
   return 0;
 }

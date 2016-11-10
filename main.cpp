@@ -260,6 +260,9 @@ int main()
   fill_first_layer();
   calculate();
   print_results();
+#ifdef WIN32
+  system("pause");
+#endif
 
   return 0;
 }
